@@ -28,6 +28,8 @@ theorem weightedPagingWithDelay_competitive {Page : Type*} [Fintype Page] [Decid
 
 The additive term `O(log k) · ∑ᵢ wᵢ` depends only on the weights, not on the requests, so this is a competitive ratio of `O(log k)`.
 
+As a side corollary, [`PagingWithDelay/Deadlines`](PagingWithDelay/Deadlines) formalizes the folklore reduction showing that competitive bounds for delay carry over to paging with deadlines (`pagingWithDeadlines_of_pagingWithDelay`): the deadline algorithm simulates the delay algorithm in virtual time.
+
 ## How to check it
 
 A reader has to check that the statement says what it should and that the proof uses no hidden assumptions. The Lean kernel checks the rest.
