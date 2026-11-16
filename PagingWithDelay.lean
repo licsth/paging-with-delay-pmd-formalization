@@ -1,5 +1,4 @@
 import PagingWithDelay.Model
-import PagingWithDelay.BBN
 import PagingWithDelay.Randomized
 
 /-!
@@ -8,9 +7,8 @@ import PagingWithDelay.Randomized
 A Lean formalization of the main theorem of `paper/paper.tex`. A human reader needs to check only:
 * this file: the statement;
 * `PagingWithDelay/Model.lean`: the definitions that the statement mentions (requests, instances, schedules and their cost, randomized algorithms);
-* `PagingWithDelay/BBN.lean`: the only assumption, the online rounding theorem of Bansal, Buchbinder and Naor (Theorem 4.1 of their paper, restated in the appendix "Rounding" of the paper), stated as an axiom.
 
-Both files import only `PagingWithDelay/Imports.lean`, a list of Mathlib modules. Everything else is proof; `#print axioms weightedPagingWithDelay_competitive` confirms that it uses no assumption besides `bansalBuchbinderNaor` (and the standard axioms `propext`, `Classical.choice`, `Quot.sound`).
+`Model.lean` imports only `PagingWithDelay/Imports.lean`, a list of Mathlib modules. Everything else is proof, including the online rounding theorem of Bansal, Buchbinder and Naor (`PagingWithDelay/BBN.lean`); `#print axioms weightedPagingWithDelay_competitive` confirms that it uses only the standard axioms `propext`, `Classical.choice`, `Quot.sound`.
 -/
 
 namespace PagingWithDelay

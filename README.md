@@ -1,6 +1,6 @@
 # Lean formalization: weighted paging with delay via mirror descent
 
-This repository formalizes, in Lean 4 + Mathlib, the main theorem of the arXiv article _Tight weighted paging with delay via mirror descent_ ([arXiv:2610.24655](https://arxiv.org/abs/2610.24655)): there is an `O(log k)`-competitive randomized online algorithm for weighted paging with delay. The only result that is assumed without proof is the online rounding theorem of Bansal, Buchbinder and Naor.
+This repository formalizes, in Lean 4 + Mathlib, the main theorem of the arXiv article _Tight weighted paging with delay via mirror descent_ ([arXiv:2610.24655](https://arxiv.org/abs/2610.24655)): there is an `O(log k)`-competitive randomized online algorithm for weighted paging with delay. The proof uses no axioms beyond the standard ones of Lean and Mathlib. It includes a from-scratch formalization of the online rounding theorem of Bansal, Buchbinder and Naor, which the paper uses as a black box; that theorem and its proof are not our work ([`PagingWithDelay/BBN`](PagingWithDelay/BBN) formalizes their proof).
 
 ## The main theorem
 
@@ -34,13 +34,12 @@ As a side corollary, [`PagingWithDelay/Deadlines`](PagingWithDelay/Deadlines) fo
 
 A reader has to check that the statement says what it should and that the proof uses no hidden assumptions. The Lean kernel checks the rest.
 
-### 1. Read the trusted files (about 220 lines)
+### 1. Read the trusted files (about 160 lines)
 
 - [`PagingWithDelay.lean`](PagingWithDelay.lean): the statement above.
 - [`PagingWithDelay/Model.lean`](PagingWithDelay/Model.lean): every definition that the statement mentions: requests and instances, schedules, their feasibility and cost, randomized algorithms, online, feasible and expected cost. It uses no custom notation.
-- [`PagingWithDelay/BBN.lean`](PagingWithDelay/BBN.lean): the assumption, the online rounding theorem of Bansal, Buchbinder and Naor (Theorem 4.1 of _A primal-dual randomized algorithm for weighted paging_), stated as an axiom.
 
-`Model.lean` and `BBN.lean` import only [`PagingWithDelay/Imports.lean`](PagingWithDelay/Imports.lean), a list of Mathlib modules. Everything else is proof. This includes the algorithm itself: the theorem asserts that an algorithm _exists_, so its definition does not need to be checked.
+`Model.lean` imports only [`PagingWithDelay/Imports.lean`](PagingWithDelay/Imports.lean), a list of Mathlib modules. Everything else is proof. This includes the algorithm itself: the theorem asserts that an algorithm _exists_, so its definition does not need to be checked.
 
 ### 2. Build the proof
 
@@ -62,7 +61,7 @@ import PagingWithDelay
 #print axioms PagingWithDelay.weightedPagingWithDelay_competitive
 ```
 
-and run `lake env lean Axioms.lean`. The output lists `propext`, `Classical.choice` and `Quot.sound` (the standard axioms of Lean and Mathlib) and `PagingWithDelay.bansalBuchbinderNaor` (the assumption), and nothing else.
+and run `lake env lean Axioms.lean`. The output lists `propext`, `Classical.choice` and `Quot.sound` (the standard axioms of Lean and Mathlib) and nothing else.
 
 ## Modelling choices
 
@@ -71,11 +70,11 @@ and run `lake env lean Axioms.lean`. The output lists `propext`, `Classical.choi
 - **Schedules** are finite lists of steps `(time, cache)` with at most `k` pages each. A step pays the weights of the pages it adds, and several steps may have the same time. A page is cached at time `s` if it is in some configuration the schedule goes through at `s` (`Schedule.CachedAt`). A request is served at the first such time `s ≥ a_r` and costs `d_r(s - a_r)`.
 - **The comparator** is any feasible schedule (which does not have to be online), so the bound holds for an optimal one. It is proved (`Schedule.exists_swapForm`) that there exists a lazy optimal comparator.
 - **Online** (`RandAlgorithm.Online`): instances with the same requests of arrival time `≤ t` give the same distribution of the steps up to time `t`. So the algorithm sees a request, including its delay function, at its arrival time. Randomized algorithms are discrete distributions (`PMF`) on schedules, _feasible_ means feasible with probability `1`.
-- **The assumption** (`BBN.Statement` in [`BBN.lean`](PagingWithDelay/BBN.lean)) is the online rounding theorem of Bansal, Buchbinder and Naor as stated in the paper's appendix. A transition from `Q` to `Q'` is a joint distribution with marginals `Q` and `Q'` that pays `wᵢ/2` per fetched and per evicted page. "`cost(Q, Q')` is at most `c`" becomes "some transition costs at most `c`". As in the paper, which takes this from BBN's proof, `𝒟` also contains the distribution concentrated on any cache state.
+- **The online rounding theorem** of Bansal, Buchbinder and Naor (Theorem 4.1 of _A primal-dual randomized algorithm for weighted paging_; `bansalBuchbinderNaor` in [`BBN.lean`](PagingWithDelay/BBN.lean)) is proved in the form the paper uses: a transition from `Q` to `Q'` (a joint distribution with marginals `Q` and `Q'`) has expected fetch cost at most `4 ∑ᵢ wᵢ |y'ᵢ - yᵢ|` (the paper uses `5`). As in the paper, `𝒟` also contains the distribution concentrated on any cache state.
 
 ## The proof
 
-The algorithm (`randomizedPMD` in [`PagingWithDelay/Randomized.lean`](PagingWithDelay/Randomized.lean)) rounds the weights up to powers of two, runs the fractional algorithm PMD (preemptive mirror descent, [`PagingWithDelay/Algorithm.lean`](PagingWithDelay/Algorithm.lean)), and rounds its output online with the theorem of Bansal, Buchbinder and Naor. With `L = ln(2k+1)`, the fractional analysis shows that PMD is online and feasible and that its fetch and delay cost satisfy (`PMD.MainProof.fracCost_le`, which does not use the online rounding assumption of Bansal, Buchbinder and Naor):
+The algorithm (`randomizedPMD` in [`PagingWithDelay/Randomized.lean`](PagingWithDelay/Randomized.lean)) rounds the weights up to powers of two, runs the fractional algorithm PMD (preemptive mirror descent, [`PagingWithDelay/Algorithm.lean`](PagingWithDelay/Algorithm.lean)), and rounds its output online with the theorem of Bansal, Buchbinder and Naor. With `L = ln(2k+1)`, the fractional analysis shows that PMD is online and feasible and that its fetch and delay cost satisfy (`PMD.MainProof.fracCost_le`):
 
 ```text
 C_fetch + C_delay ≤ (115 L + 345/2) · cost(S) + (115 L + 387/2) · ∑ᵢ wᵢ.

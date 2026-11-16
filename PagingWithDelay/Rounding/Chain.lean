@@ -230,42 +230,21 @@ lemma marginal_pure (C : Finset Page) :
     (by simp)]
   simp
 
-/-- The expected fetch cost of a transition is at most twice its cost. -/
-lemma fetchCost_le (w : Page → ℝ) (hw : ∀ i, 0 ≤ w i) (π : PMF (Finset Page × Finset Page)) :
-    ∑ CC : Finset Page × Finset Page, (π CC).toReal * ∑ i ∈ CC.2 \ CC.1, w i ≤
-      2 * BBN.transitionCost w π := by
-  rw [BBN.transitionCost, Finset.mul_sum]
-  refine Finset.sum_le_sum fun CC _ => ?_
-  have ha : 0 ≤ (π CC).toReal := ENNReal.toReal_nonneg
-  have hs : 0 ≤ ∑ i ∈ CC.1 \ CC.2, w i / 2 := Finset.sum_nonneg fun i _ => by linarith [hw i]
-  rw [← Finset.sum_div]
-  nlinarith [mul_nonneg ha hs]
-
-omit [DecidableEq Page] in
-/-- `2 cost_f(y, y') = ∑ᵢ wᵢ |y'ᵢ - yᵢ|`. -/
-lemma two_mul_fracCost (w y y' : Page → ℝ) :
-    2 * BBN.fracCost w y y' = ∑ i, w i * |y' i - y i| := by
-  rw [BBN.fracCost, Finset.mul_sum]
-  congr 1
-  funext i
-  rw [abs_sub_comm]
-  ring
-
-/-- Along valid fractional caches, every cache distribution of the chain lies in `D` with the given marginals and every transition costs at most `5` times the fractional cost, provided the transitions `cpl` do so (`thm:bbn`). -/
+/-- Along valid fractional caches, every cache distribution of the chain lies in `D` with the given marginals and every transition has expected fetch cost at most `4 ∑ᵢ wᵢ |y'ᵢ - yᵢ|`, provided the transitions `cpl` do so (`thm:bbn`). -/
 lemma joint_spec (w : Page → ℝ) (k : ℕ) (D : Set (PMF (Finset Page)))
     (cpl : PMF (Finset Page) → (Page → ℝ) → (Page → ℝ) → PMF (Finset Page × Finset Page))
     (hcpl : ∀ Q ∈ D, ∀ y ∈ BBN.fracCaches k, ∀ y' ∈ BBN.fracCaches k, BBN.marginal Q = y →
       (cpl Q y y').map Prod.fst = Q ∧ (cpl Q y y').map Prod.snd ∈ D ∧
         BBN.marginal ((cpl Q y y').map Prod.snd) = y' ∧
-        BBN.transitionCost w (cpl Q y y') ≤ 5 * BBN.fracCost w y y')
+        BBN.fetchCost w (cpl Q y y') ≤ 4 * ∑ i, w i * |y' i - y i|)
     (ys : List (Page → ℝ)) :
     ∀ Q ∈ D, ∀ y ∈ BBN.fracCaches k, BBN.marginal Q = y → (∀ y' ∈ ys, y' ∈ BBN.fracCaches k) →
       (∀ ν (hν : ν < (y :: ys).length),
         cacheLaw (joint cpl Q y ys) ν ∈ D ∧
           BBN.marginal (cacheLaw (joint cpl Q y ys) ν) = (y :: ys)[ν]) ∧
       (∀ ν (hν : ν + 1 < (y :: ys).length),
-        BBN.transitionCost w (stepLaw (joint cpl Q y ys) ν) ≤
-          5 * BBN.fracCost w (y :: ys)[ν] (y :: ys)[ν + 1]) := by
+        BBN.fetchCost w (stepLaw (joint cpl Q y ys) ν) ≤
+          4 * ∑ i, w i * |(y :: ys)[ν + 1] i - (y :: ys)[ν] i|) := by
   induction ys with
   | nil =>
     intro Q hQ y hy hm _
@@ -320,7 +299,7 @@ theorem onlineRounding (w : Page → ℝ) (hw_pos : ∀ i, 0 < w i)
   have hcpl : ∀ Q ∈ D, ∀ y ∈ BBN.fracCaches k, ∀ y' ∈ BBN.fracCaches k, BBN.marginal Q = y →
       (cpl Q y y').map Prod.fst = Q ∧ (cpl Q y y').map Prod.snd ∈ D ∧
         BBN.marginal ((cpl Q y y').map Prod.snd) = y' ∧
-        BBN.transitionCost w (cpl Q y y') ≤ 5 * BBN.fracCost w y y' := by
+        BBN.fetchCost w (cpl Q y y') ≤ 4 * ∑ i, w i * |y' i - y i| := by
     intro Q hQ y hy y' hy' hm
     have h : Q ∈ D ∧ y ∈ BBN.fracCaches k ∧ y' ∈ BBN.fracCaches k ∧ BBN.marginal Q = y :=
       ⟨hQ, hy, hy', hm⟩
@@ -347,12 +326,10 @@ theorem onlineRounding (w : Page → ℝ) (hw_pos : ∀ i, 0 < w i)
         simpa [length_of_mem_rest cpl _ _ _ _ Cs' hCs'] using hν
       refine hD _ (hA ν hlen).1 _ ?_
       exact (PMF.mem_support_map_iff _ _ _).mpr ⟨_, hCs, by simp [List.getElem?_eq_getElem hν]⟩
-    · calc _ ≤ 2 * BBN.transitionCost w (stepLaw (chainRound cpl C₀ (y :: ys)) ν) :=
-            fetchCost_le w (fun i => (hw_pos i).le) _
-        _ ≤ 2 * (5 * BBN.fracCost w (y :: ys)[ν] (y :: ys)[ν + 1]) := by
-            gcongr
-            exact hB ν hν
-        _ = _ := by rw [mul_left_comm, two_mul_fracCost]
+    · have h := hB ν hν
+      have hpos : 0 ≤ ∑ i, w i * |(y :: ys)[ν + 1] i - (y :: ys)[ν] i| :=
+        Finset.sum_nonneg fun i _ => mul_nonneg (hw_pos i).le (abs_nonneg _)
+      exact h.trans (by linarith)
 
 end Rounding
 

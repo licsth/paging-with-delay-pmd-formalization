@@ -12,5 +12,5 @@ import Mathlib.Topology.Algebra.Module.ModuleTopology
 /-!
 # The parts of Mathlib that the formalization uses
 
-Instead of all of Mathlib, `Model.lean` and `BBN.lean` import these modules: they contain every Mathlib declaration the formalization uses, and only about a quarter of Mathlib, which keeps compilation lighter.
+Instead of all of Mathlib, `Model.lean` imports these modules: together with the measure theory imported in `BBN/Defs.lean`, they contain every Mathlib declaration the formalization uses, and only part of Mathlib, which keeps compilation lighter.
 -/

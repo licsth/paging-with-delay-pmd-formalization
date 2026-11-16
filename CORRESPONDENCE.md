@@ -119,7 +119,8 @@ The potential `D(OPT‖x)` is `PMD.divergence` (`Critical/Divergence.lean`).
 ## Appendix A: Rounding
 
 ### `thm:bbn`
-* `bansalBuchbinderNaor` (`BBN.lean`), an axiom stating `BBN.Statement`. It is the only assumption of the formalization. It also asserts that `𝒟` contains the distribution concentrated on any cache, a fact from the proof of Bansal, Buchbinder and Naor.
+* `bansalBuchbinderNaor` (`BBN.lean`) proves `BBN.Statement` from `bbn_rounding` (`BBN/Rounding.lean`), a formalization of the proof of Bansal, Buchbinder and Naor. It bounds the expected fetch cost by `4 ∑ᵢ wᵢ |y'ᵢ - yᵢ|` (the paper's proof of `cor:rounding` uses `5 ∑ᵢ wᵢ |y'ᵢ - yᵢ|`). It also asserts that `𝒟` contains the distribution concentrated on any cache, a fact from the proof of Bansal, Buchbinder and Naor.
+* The proof: `BBN/Defs.lean` (the class `𝒟(y)` via the class profiles `n_v(α)`), `BBN/Profile.lean` (the coupling of the profiles through `α`), `BBN/AddRemove.lean` (fixing the marginals page by page), `BBN/Transfer.lean` (moving pages within weight classes), `BBN/Rounding.lean` (assembly).
 
 ### `cor:rounding`
 * `Rounding.onlineRounding` (`Rounding/Chain.lean`), from `thm:bbn` via `Rounding.joint_spec`.
